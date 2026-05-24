@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+# Environment variables (SANGAT PENTING — jangan commit .env!)
+.env
+# Logs
+logs/
+*.log
+npm-debug.log*
+# OS files
+Thumbs.db # Windows
+# Build output
+dist/
+build/
