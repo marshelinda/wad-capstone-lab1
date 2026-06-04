@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { defineConfig } from "prisma/config";
 
-export default defineConfig({
+// Kita gunakan export default objek langsung agar kompatibel dengan Prisma v5
+export default {
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
@@ -9,4 +9,4 @@ export default defineConfig({
   datasource: {
     url: process.env.DATABASE_URL || "mysql://root:@localhost:3306/wadcapstone",
   },
-});
+};
