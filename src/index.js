@@ -2,6 +2,7 @@ const config = require('./config');
 const express = require('express');
 const routes = require('./routes');
 const tasksRoutes = require('./routes/tasks.routes');
+const usersRoutes = require('./routes/users.routes'); // ← BARU: Mengimpor rute user
 const setupSwagger = require('./docs/swagger');
 
 const app = express();
@@ -10,7 +11,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logging middleware
+// Logging middleware untuk memantau request yang masuk beserta durasinya
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -24,6 +25,7 @@ app.use((req, res, next) => {
 app.use('/', routes); // /health
 app.use('/api', routes); // /api/info, /api/echo/:msg 
 app.use('/api/v1/tasks', tasksRoutes); // /api/v1/tasks (CRUD)
+app.use('/api/v1/users', usersRoutes); // ← BARU: Mendaftarkan rute /api/v1/users
 
 // ─── Swagger UI ─────────────────────────────────────────────
 setupSwagger(app);
@@ -54,6 +56,7 @@ app.listen(config.port, () => {
   console.log('─'.repeat(50));
   console.log(` ${config.appName} v${config.version}`);
   console.log(` Environment : ${config.env}`);
+  console.log(` Database    : MySQL via XAMPP`); // ← BARU: Info database terupdate
   console.log(` Server      : http://localhost:${config.port}`);
   console.log(` Docs        : http://localhost:${config.port}/api/docs`);
   console.log('─'.repeat(50));

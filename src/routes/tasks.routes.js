@@ -15,7 +15,6 @@ router.post('/', validate(createTaskSchema, 'body'), ctrl.createTask);
 
 // Jalur Endpoint dengan ID spesifik
 router.get('/:id', ctrl.getTask);
-router.put('/:id', validate(replaceTaskSchema, 'body'), ctrl.replaceTask);
 router.patch('/:id', validate(updateTaskSchema, 'body'), ctrl.updateTask);
 router.delete('/:id', ctrl.deleteTask);
 
