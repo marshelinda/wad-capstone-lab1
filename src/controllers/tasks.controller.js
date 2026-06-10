@@ -34,16 +34,16 @@ const listTasks = async (req, res, next) => {
   }
 };
 
-// ─── POST /tasks (Buat Task Baru) ──────────────────────
+// ─── POST /tasks (Buat Task Baru - UPDATED WITH JWT) ───
 const createTask = async (req, res, next) => {
   try {
-    // Memastikan userId dikonversi ke Number agar dikenali database dengan benar
-    const userIdInput = req.body.userId ? Number(req.body.userId) : undefined;
+    // AMBIL USER ID LANGSUNG DARI JWT TOKEN YANG SUDAH DI-VERIFIKASI MIDDLEWARE
+    const jwtUserId = req.user.userId;
 
-    // Kirim data murni tanpa fallback '|| 1' agar jika ID 999 dimasukkan, DB melempar FK Error (500)
+    // Gabungkan data body dari Postman dengan userId pemilik token
     const task = await taskRepo.create({ 
       ...req.body, 
-      userId: userIdInput
+      userId: Number(jwtUserId) // Menjamin userId terisi secara otomatis dari sistem keamanan
     });
 
     res.status(201)

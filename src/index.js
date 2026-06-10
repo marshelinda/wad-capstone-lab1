@@ -2,7 +2,9 @@ const config = require('./config');
 const express = require('express');
 const routes = require('./routes');
 const tasksRoutes = require('./routes/tasks.routes');
-const usersRoutes = require('./routes/users.routes'); // ← BARU: Mengimpor rute user
+const usersRoutes = require('./routes/users.routes'); 
+const authRoutes = require('./routes/auth.routes');         // ← BARU: Mengimpor rute auth
+const authenticate = require('./middleware/authenticate'); // ← BARU: Mengimpor middleware JWT
 const setupSwagger = require('./docs/swagger');
 
 const app = express();
@@ -21,16 +23,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// ─── Routes ─────────────────────────────────────────────────
+// ─── Routes (Tanpa Proteksi) ─────────────────────────────────
 app.use('/', routes); // /health
 app.use('/api', routes); // /api/info, /api/echo/:msg 
-app.use('/api/v1/tasks', tasksRoutes); // /api/v1/tasks (CRUD)
-app.use('/api/v1/users', usersRoutes); // ← BARU: Mendaftarkan rute /api/v1/users
+app.use('/auth', authRoutes); // ← BARU: Rute login, register, refresh, logout
+
+// ─── API Routes (Dilindungi JWT) ─────────────────────────────
+// Middleware 'authenticate' dipasang di sini agar semua rute di bawah /api/v1 wajib membawa token
+app.use('/api/v1', authenticate);
+app.use('/api/v1/tasks', tasksRoutes); // /api/v1/tasks (CRUD yang terproteksi)
+app.use('/api/v1/users', usersRoutes); // /api/v1/users (Terproteksi)
 
 // ─── Swagger UI ─────────────────────────────────────────────
 setupSwagger(app);
 
-// ─── 404 & Error Handlers ───────────────────────────────────
+// ─── 404 Handler ────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
     error: {
@@ -41,8 +48,30 @@ app.use((req, res) => {
   });
 });
 
+// ─── Global Error Handler (Update Terkini) ───────────────────
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err.message);
+  // 1. Error dengan statusCode bawaan dari authService
+  if (err.statusCode) {
+    return res.status(err.statusCode).json({
+      error: { 
+        code: err.code || 'AUTH_ERROR', 
+        message: err.message 
+      },
+    });
+  }
+
+  // 2. Prisma P2002: Unique constraint failed (misal: email duplikat)
+  if (err.code === 'P2002') {
+    return res.status(409).json({
+      error: { 
+        code: 'DUPLICATE_RESOURCE', 
+        message: 'Data sudah digunakan.' 
+      },
+    });
+  }
+
+  // 3. Fallback error jika terjadi masalah tidak terduga lainnya
+  console.error('Unhandled error:', err);
   res.status(500).json({
     error: {
       code: 'INTERNAL_ERROR',
@@ -56,7 +85,7 @@ app.listen(config.port, () => {
   console.log('─'.repeat(50));
   console.log(` ${config.appName} v${config.version}`);
   console.log(` Environment : ${config.env}`);
-  console.log(` Database    : MySQL via XAMPP`); // ← BARU: Info database terupdate
+  console.log(` Database    : MySQL via XAMPP`); 
   console.log(` Server      : http://localhost:${config.port}`);
   console.log(` Docs        : http://localhost:${config.port}/api/docs`);
   console.log('─'.repeat(50));

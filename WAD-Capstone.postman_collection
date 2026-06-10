@@ -630,6 +630,446 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Lab 6",
+      "item": [
+        {
+          "name": "Register User Baru (Sukses)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Andi\",\r\n  \"email\": \"andi@test.com\",\r\n  \"password\": \"Secret123!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Email Sama (Gagal - Duplicate)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Andi2\",\r\n  \"email\": \"andi@test.com\",\r\n  \"password\": \"Secret123!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Valid (Sukses)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"andi@test.com\",\r\n  \"password\": \"Secret123!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Password Salah (Gagal)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"andi@test.com\",\r\n  \"password\": \"salah\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile / Me (Proteksi Token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA0Nzg3OSwiZXhwIjoxNzgxMDQ4Nzc5LCJqdGkiOiIxNGViZTYzMC1jMjVlLTRlMDItODExOC02NzRmMDIwODBjOGMifQ.tVe26RIB7XdWUQ26u4ncXAXdEoYZHf3lRHDlJrcZkBY",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/auth/me",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Tanpa Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/v1/tasks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Token Invalid",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer emJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA0Nzg3OSwiZXhwIjoxNzgxMDQ4Nzc5LCJqdGkiOiIxNGViZTYzMC1jMjVlLTRlMDItODExOC02NzRmMDIwODBjOGMifQ.tVe26RIB7XdWUQ26u4ncXAXdEoYZHf3lRHDlJrcZkBY",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/v1/tasks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Token Valid",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA0Nzg3OSwiZXhwIjoxNzgxMDQ4Nzc5LCJqdGkiOiIxNGViZTYzMC1jMjVlLTRlMDItODExOC02NzRmMDIwODBjOGMifQ.tVe26RIB7XdWUQ26u4ncXAXdEoYZHf3lRHDlJrcZkBY",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/v1/tasks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Buat Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA1MTM0NiwiZXhwIjoxNzgxMDUyMjQ2LCJqdGkiOiI5ZmQ0OTQxYi0zZjEzLTRiYjUtYWNkYy0xMDRiNjRjOWZhYjAifQ.lfD-mwq87bkrCKRJmGeRlS7doWFsh7wQE48dA0nURqM",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Mengerjakan Lab 6\", \"description\": \"Modul Autentikasi\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/tasks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA1MjE2NCwiZXhwIjoxNzgxNjU2OTY0LCJqdGkiOiJlMDU4NDA5Ny1hMDQ1LTQzZTQtODE2OS0wMDMwOGQxZDM3NWUifQ.yuifqWpE877Df-wonWUswYhr8b9eX5Jk1az9h4OUlyE\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/refresh",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Gunakan accessToken baru",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA1MjE3OCwiZXhwIjoxNzgxMDUzMDc4LCJqdGkiOiJiZmMyMjQ3NC01ZWE3LTQ5MDUtYTA5Yy05YjIxNWQwZWEyNDYifQ.1MRgc9bjUWry-5gISc_Wxl9GKIplCPRUPM9Hs0d3dLU",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/v1/tasks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reuse refresh token lama",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA1MjE2NCwiZXhwIjoxNzgxNjU2OTY0LCJqdGkiOiJlMDU4NDA5Ny1hMDQ1LTQzZTQtODE2OS0wMDMwOGQxZDM3NWUifQ.yuifqWpE877Df-wonWUswYhr8b9eX5Jk1az9h4OUlyE\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/refresh",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verifikasi semua token direvoke",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA1MjE3OCwiZXhwIjoxNzgxMDUzMDc4LCJqdGkiOiJiZmMyMjQ3NC01ZWE3LTQ5MDUtYTA5Yy05YjIxNWQwZWEyNDYifQ.1MRgc9bjUWry-5gISc_Wxl9GKIplCPRUPM9Hs0d3dLU",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/v1/tasks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "tasks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA1NjQzNiwiZXhwIjoxNzgxNjYxMjM2LCJqdGkiOiIwMTJhNWUzMS0wYzQwLTQ5MTYtOGIxMi1jOTA3ZjRiZDdlMzQifQ.Jb0Mnq89JL9uUQCRrHExsQUqHwUTVCv1PdVIwYihpYY\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/logout",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh setelah logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImVtYWlsIjoiYW5kaUB0ZXN0LmNvbSIsImlhdCI6MTc4MTA1NjQzNiwiZXhwIjoxNzgxNjYxMjM2LCJqdGkiOiIwMTJhNWUzMS0wYzQwLTQ5MTYtOGIxMi1jOTA3ZjRiZDdlMzQifQ.Jb0Mnq89JL9uUQCRrHExsQUqHwUTVCv1PdVIwYihpYY\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/refresh",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
