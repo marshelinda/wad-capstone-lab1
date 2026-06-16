@@ -3,6 +3,7 @@ const express = require('express');
 const routes = require('./routes');
 const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes'); 
+const reminderRoutes = require('./routes/reminderRoutes');  // ← BARU: Mengimpor rute reminder UTS
 const authRoutes = require('./routes/auth.routes');         // ← BARU: Mengimpor rute auth
 const authenticate = require('./middleware/authenticate'); // ← BARU: Mengimpor middleware JWT
 const setupSwagger = require('./docs/swagger');
@@ -31,8 +32,9 @@ app.use('/auth', authRoutes); // ← BARU: Rute login, register, refresh, logout
 // ─── API Routes (Dilindungi JWT) ─────────────────────────────
 // Middleware 'authenticate' dipasang di sini agar semua rute di bawah /api/v1 wajib membawa token
 app.use('/api/v1', authenticate);
-app.use('/api/v1/tasks', tasksRoutes); // /api/v1/tasks (CRUD yang terproteksi)
-app.use('/api/v1/users', usersRoutes); // /api/v1/users (Terproteksi)
+app.use('/api/v1/tasks', tasksRoutes);       // /api/v1/tasks (CRUD yang terproteksi)
+app.use('/api/v1/users', usersRoutes);       // /api/v1/users (Terproteksi)
+app.use('/api/v1/reminders', reminderRoutes); // ← BARU: Jalur /api/v1/reminders/upcoming (Terproteksi)
 
 // ─── Swagger UI ─────────────────────────────────────────────
 setupSwagger(app);

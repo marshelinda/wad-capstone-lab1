@@ -1,64 +1,61 @@
-require('dotenv').config(); // ← WAJIB DI BARIS 1 BIAR .ENV KE-LOAD DULUAN
+require('dotenv').config(); // WAJIB DI BARIS 1 BIAR .ENV KE-LOAD DULUAN
 const { PrismaClient } = require('@prisma/client');
-const { PrismaMariaDb } = require('@prisma/adapter-mariadb');
+const argon2 = require('argon2'); // ← SINKRON: Menggunakan argon2 sesuai auth.service kamu
 
-// Mengecek apakah DATABASE_URL aman terdeteksi
-if (!process.env.DATABASE_URL) {
-  console.error("Eror: DATABASE_URL tidak ditemukan di file .env lokal kamu!");
-  process.exit(1);
-}
+// Inisialisasi PrismaClient standar (otomatis membaca DATABASE_URL dari .env)
+const prisma = new PrismaClient();
 
-// Membedah URL koneksi dari file .env
-const { hostname, port, username, password, pathname } = new URL(process.env.DATABASE_URL);
-
-// Inisialisasi adapter MariaDB/MySQL untuk Prisma 7
-const adapter = new PrismaMariaDb({
-  host: hostname,
-  port: parseInt(port) || 3306,
-  user: username,
-  password: password || undefined,
-  database: pathname.slice(1),
-});
-
-const prisma = new PrismaClient({ adapter });
+// Konfigurasi opsi argon2id disamakan dengan auth.service agar standar enkripsinya seragam
+const ARGON2_OPTIONS = {
+  memoryCost: 65536, 
+  timeCost: 3,       
+  parallelism: 4,    
+};
 
 async function main() {
   console.log('Mulai seeding database MySQL...');
 
   // ─── Reset Data Lama ──────────────────────────────────
+  // Menghapus data lama dengan urutan terbalik dari relasi untuk menghindari Foreign Key error
+  await prisma.reminder.deleteMany(); // Wajib dihapus pertama karena bergantung pada task & user
   await prisma.task.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 
   // ─── Buat Categories ──────────────────────────────────
-  const [catBelajar, catKerja, catProyek] = await Promise.all([
+  const [catBelajar, catKerja, catProyek, catKesehatan, catKeuangan] = await Promise.all([
     prisma.category.create({ data: { name: 'Belajar', color: '#6366F1' } }),
     prisma.category.create({ data: { name: 'Pekerjaan', color: '#F59E0B' } }),
     prisma.category.create({ data: { name: 'Proyek', color: '#10B981' } }),
+    prisma.category.create({ data: { name: 'Kesehatan', color: '#EF4444' } }), 
+    prisma.category.create({ data: { name: 'Keuangan', color: '#EC4899' } }),  
   ]);
-  console.log(' ✓ 3 kategori dibuat');
+  console.log(' ✓ 5 kategori dibuat');
 
   // ─── Buat Users ───────────────────────────────────────
+  // Mengenkripsi password menggunakan argon2id asli agar bisa diverifikasi saat login
+  const hashedPassword = await argon2.hash('password123', ARGON2_OPTIONS);
+
   const [budi, siti] = await Promise.all([
     prisma.user.create({
       data: { 
         name: 'Budi Santoso', 
         email: 'budi@example.com',
-        password: 'hashed_later' 
+        password: hashedPassword // Menggunakan hash Argon2 yang valid
       }
     }),
     prisma.user.create({
       data: { 
         name: 'Siti Rahayu', 
         email: 'siti@example.com',
-        password: 'hashed_later' 
+        password: hashedPassword // Menggunakan hash Argon2 yang valid
       }
     }),
   ]);
-  console.log(' ✓ 2 user dibuat');
+  console.log(' ✓ 2 user dibuat dengan password ter-hash Argon2');
 
   // ─── Buat Tasks ───────────────────────────────────────
-  await Promise.all([
+  const [taskServer, taskAPI, taskMySQL, taskPrisma, taskLaporan, taskDesain] = await Promise.all([
     prisma.task.create({
       data: { 
         title: 'Setup Express server', 
@@ -116,7 +113,37 @@ async function main() {
     }),
   ]);
   console.log(' ✓ 6 task dibuat');
-  console.log('Seeding selesai!');
+
+  // ─── Buat Reminders (Model Tambahan UTS Bagian D) ──────
+  // Menyiapkan waktu pengingat masa mendatang (besok dan lusa)
+  const besok = new Date();
+  besok.setDate(besok.getDate() + 1);
+
+  const lusa = new Date();
+  lusa.setDate(lusa.getDate() + 2);
+
+  await Promise.all([
+    prisma.reminder.create({
+      data: {
+        message: 'Jangan lupa review arsitektur server Express sebelum deployment!',
+        remindAt: besok,
+        isSent: false,
+        userId: budi.id,
+        taskId: taskServer.id
+      }
+    }),
+    prisma.reminder.create({
+      data: {
+        message: 'Persiapan kuis REST API sebentar lagi dimulai.',
+        remindAt: lusa,
+        isSent: false,
+        userId: budi.id,
+        taskId: taskAPI.id
+      }
+    })
+  ]);
+  console.log(' ✓ 2 data pengingat (Reminder) berhasil ditambahkan');
+  console.log('Seeding selesai dengan sukses!');
 }
 
 main()
