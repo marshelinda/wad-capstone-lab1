@@ -16,12 +16,13 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   tasks         Task[]
-  refreshTokens RefreshToken[] // Relasi baru yang ditambahkan
+  refreshTokens RefreshToken[]
+  reminders     Reminder[]     // Relasi balik dari model tambahan Reminder
 
   @@map("users")
 }
 
-// ─── Model Category ───────────────────────────────────────
+// ─── Model Category (Model Tambahan UTS Bagian C) ─────────
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique @db.VarChar(100)
@@ -29,32 +30,54 @@ model Category {
   createdAt DateTime @default(now())
   tasks     Task[]
 
+  // Memenuhi syarat UTS Bagian C Poin 1 (Minimal 1 @@index)
+  @@index([name])
   @@map("categories")
 }
 
 // ─── Model Task ───────────────────────────────────────────
 model Task {
-  id          Int       @id @default(autoincrement())
-  title       String    @db.VarChar(200)
-  description String?   @db.Text
-  status      Status    @default(TODO)
-  priority    Priority  @default(MEDIUM)
+  id          Int        @id @default(autoincrement())
+  title       String     @db.VarChar(200)
+  description String?    @db.Text
+  status      Status     @default(TODO)
+  priority    Priority   @default(MEDIUM)
   dueDate     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   userId      Int
   categoryId  Int?
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  reminders   Reminder[] // Relasi balik dari model tambahan Reminder
 
   // Index untuk mempercepat query filter umum
   @@index([userId])
   @@index([status])
-  @@index([userId, status]) // Composite index
+  @@index([userId, status])
   @@map("tasks")
 }
 
-// ─── Model baru: RefreshToken ───────────────────────────
+// ─── Model Reminder (Model Tambahan UTS Bagian D) ─────────
+model Reminder {
+  id        Int      @id @default(autoincrement())
+  message   String   @db.VarChar(255)
+  remindAt  DateTime
+  isSent    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  taskId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  // Index eksplisit untuk optimasi query filter penjadwalan waktu mendatang
+  @@index([remindAt, isSent])
+  @@index([userId])
+  @@map("reminders")
+}
+
+// ─── Model RefreshToken ───────────────────────────────────
 model RefreshToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique @db.VarChar(512)

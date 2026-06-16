@@ -1070,6 +1070,72 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "UTS",
+      "item": [
+        {
+          "name": "Auth Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"budi@example.com\",\r\n  \"password\": \"password123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upcoming Reminders",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE0LCJlbWFpbCI6ImJ1ZGlAZXhhbXBsZS5jb20iLCJpYXQiOjE3ODE1OTI3NDUsImV4cCI6MTc4MTU5MzY0NSwianRpIjoiOTIxOGE3ZjAtYTVjZS00MTUxLWIyMDctMWI2NTM5Yjg1NzE0In0.09-KTpjTr7I4Qh9GrsFGvoI3X8NsTX9BZmina_SLf7s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/v1/reminders/upcoming",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "api",
+                "v1",
+                "reminders",
+                "upcoming"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
