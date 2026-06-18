@@ -1,18 +1,27 @@
 const config = require('./config');
 const express = require('express');
+const helmet = require('helmet');                         // ← BARU: Mengimpor Helmet untuk keamanan headers
 const routes = require('./routes');
 const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes'); 
-const reminderRoutes = require('./routes/reminderRoutes');  // ← BARU: Mengimpor rute reminder UTS
-const authRoutes = require('./routes/auth.routes');         // ← BARU: Mengimpor rute auth
-const authenticate = require('./middleware/authenticate'); // ← BARU: Mengimpor middleware JWT
+const adminRoutes = require('./routes/admin.routes');       // ← Mengimpor rute admin RBAC
+const reminderRoutes = require('./routes/reminderRoutes');  // ← Mengimpor rute reminder UTS
+const authRoutes = require('./routes/auth.routes');         // ← Mengimpor rute auth
+const authenticate = require('./middleware/authenticate'); // ← Mengimpor middleware JWT
 const setupSwagger = require('./docs/swagger');
+
+// Import apiLimiter global dari file config rateLimiter kamu
+const { apiLimiter } = require('./config/rateLimiter');
 
 const app = express();
 
 // ─── Middleware Global ───────────────────────────────────────
+app.use(helmet());                                          // ← BARU: Mengaktifkan tameng pengaman Helmet Headers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Pasang apiLimiter secara global agar Express mulai menghitung request IP
+app.use(apiLimiter);
 
 // Logging middleware untuk memantau request yang masuk beserta durasinya
 app.use((req, res, next) => {
@@ -27,14 +36,15 @@ app.use((req, res, next) => {
 // ─── Routes (Tanpa Proteksi) ─────────────────────────────────
 app.use('/', routes); // /health
 app.use('/api', routes); // /api/info, /api/echo/:msg 
-app.use('/auth', authRoutes); // ← BARU: Rute login, register, refresh, logout
+app.use('/auth', authRoutes); // ← Rute login, register, refresh, logout (Di dalamnya ada authLimiter)
 
 // ─── API Routes (Dilindungi JWT) ─────────────────────────────
 // Middleware 'authenticate' dipasang di sini agar semua rute di bawah /api/v1 wajib membawa token
 app.use('/api/v1', authenticate);
 app.use('/api/v1/tasks', tasksRoutes);       // /api/v1/tasks (CRUD yang terproteksi)
 app.use('/api/v1/users', usersRoutes);       // /api/v1/users (Terproteksi)
-app.use('/api/v1/reminders', reminderRoutes); // ← BARU: Jalur /api/v1/reminders/upcoming (Terproteksi)
+app.use('/api/v1/admin', adminRoutes);       // /api/v1/admin (← Jalur Admin RBAC Terproteksi)
+app.use('/api/v1/reminders', reminderRoutes); // /api/v1/reminders/upcoming (Terproteksi)
 
 // ─── Swagger UI ─────────────────────────────────────────────
 setupSwagger(app);
@@ -50,7 +60,7 @@ app.use((req, res) => {
   });
 });
 
-// ─── Global Error Handler (Update Terkini) ───────────────────
+// ─── Global Error Handler ───────────────────────────────────
 app.use((err, req, res, next) => {
   // 1. Error dengan statusCode bawaan dari authService
   if (err.statusCode) {

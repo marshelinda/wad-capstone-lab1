@@ -5,6 +5,9 @@ const validate = require('../middleware/validate');
 const authenticate = require('../middleware/authenticate');
 const { registerSchema, loginSchema, refreshSchema } = require('../validators/auth.validator');
 
+// BARU: Import rate limiter yang sudah kamu buat di config
+const { authLimiter, sensitiveLimiter } = require('../config/rateLimiter');
+
 /**
  * @swagger
  * tags:
@@ -35,7 +38,8 @@ const { registerSchema, loginSchema, refreshSchema } = require('../validators/au
  * 409:
  * description: Email sudah terdaftar
  */
-router.post('/register', validate(registerSchema), ctrl.register);
+// Tambahkan sensitiveLimiter untuk membatasi spam registrasi akun baru
+router.post('/register', sensitiveLimiter, validate(registerSchema), ctrl.register);
 
 /**
  * @swagger
@@ -44,9 +48,11 @@ router.post('/register', validate(registerSchema), ctrl.register);
  * summary: Login dan dapatkan token
  * tags: [Auth]
  */
-router.post('/login', validate(loginSchema), ctrl.login);
+// Tambahkan authLimiter di sini untuk mencegah Brute-Force Login (Langkah 11 & 12)
+router.post('/login', authLimiter, validate(loginSchema), ctrl.login);
 
-router.post('/refresh', validate(refreshSchema), ctrl.refresh);
+// Tambahkan sensitiveLimiter untuk endpoint krusial pembaruan token
+router.post('/refresh', sensitiveLimiter, validate(refreshSchema), ctrl.refresh);
 
 router.post('/logout', ctrl.logout);
 

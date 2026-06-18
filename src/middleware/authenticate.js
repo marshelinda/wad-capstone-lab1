@@ -21,10 +21,11 @@ const authenticate = (req, res, next) => {
     // 2. Verifikasi signature dan expiry
     const payload = jwt.verify(token, config.jwt.accessSecret);
 
-    // 3. Tambahkan informasi user ke request untuk digunakan controller
+    // 3. Tambahkan informasi user (termasuk ROLE) ke request untuk digunakan controller/middleware otorisasi
     req.user = {
       userId: payload.userId,
       email: payload.email,
+      role: payload.role, // ← UPDATE: Menambahkan role dari payload token sesuai handbook
     };
 
     next();
