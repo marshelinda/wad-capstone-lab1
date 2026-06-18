@@ -50,7 +50,7 @@ const authService = {
 
     const user = await prisma.user.create({
       data: { name, email, password: hashedPassword },
-      select: { id: true, name: true, email: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }, // ← Sertakan role di sini
     });
 
     return user;
@@ -75,14 +75,18 @@ const authService = {
       throw err;
     }
 
+    // UPDATE: Menambahkan role ke dalam payload Access Token sesuai instruksi Handbook
     const accessToken = signAccessToken({
       userId: user.id,
       email: user.email,
+      role: user.role, // ← Tambahan dari Handbook
     });
 
+    // Menambahkan role juga ke refresh token agar saat perpanjangan (refresh) datanya terjaga
     const refreshToken = signRefreshToken({ 
       userId: user.id,
-      email: user.email 
+      email: user.email,
+      role: user.role 
     });
 
     await refreshTokenRepo.create({
@@ -92,7 +96,7 @@ const authService = {
     });
 
     return {
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role }, // ← Sertakan di respon profil
       accessToken,
       refreshToken,
     };
@@ -131,14 +135,17 @@ const authService = {
 
     await refreshTokenRepo.revoke(tokenString);
 
+    // UPDATE: Membawa kembali payload.role saat generate token baru
     const newAccessToken = signAccessToken({ 
       userId: payload.userId,
-      email: payload.email 
+      email: payload.email,
+      role: payload.role // ← Agar role tetap terbawa di token baru
     });
     
     const newRefreshToken = signRefreshToken({ 
       userId: payload.userId,
-      email: payload.email 
+      email: payload.email,
+      role: payload.role
     });
 
     await refreshTokenRepo.create({
@@ -154,7 +161,6 @@ const authService = {
   async logout(tokenString) {
     if (!tokenString) return;
 
-    // Pastikan token divalidasi keberadaannya di DB sebelum dihapus/di-revoke
     const storedToken = await refreshTokenRepo.findByToken(tokenString);
     if (!storedToken) {
       const err = new Error('Refresh token tidak ditemukan atau sudah logout.');
@@ -163,7 +169,6 @@ const authService = {
       throw err;
     }
 
-    // Eksekusi pencabutan token di DB rujukan
     await refreshTokenRepo.revoke(tokenString);
   },
 };

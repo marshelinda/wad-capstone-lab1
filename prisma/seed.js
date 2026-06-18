@@ -32,27 +32,37 @@ async function main() {
   ]);
   console.log(' ✓ 5 kategori dibuat');
 
-  // ─── Buat Users ───────────────────────────────────────
+  // ─── Buat Users (Ditambahkan User Admin sesuai Handbook) ───
   // Mengenkripsi password menggunakan argon2id asli agar bisa diverifikasi saat login
   const hashedPassword = await argon2.hash('password123', ARGON2_OPTIONS);
 
-  const [budi, siti] = await Promise.all([
+  const [budi, siti, admin] = await Promise.all([
     prisma.user.create({
       data: { 
         name: 'Budi Santoso', 
         email: 'budi@example.com',
-        password: hashedPassword // Menggunakan hash Argon2 yang valid
+        password: hashedPassword,
+        role: 'USER'
       }
     }),
     prisma.user.create({
       data: { 
         name: 'Siti Rahayu', 
         email: 'siti@example.com',
-        password: hashedPassword // Menggunakan hash Argon2 yang valid
+        password: hashedPassword,
+        role: 'USER'
+      }
+    }),
+    prisma.user.create({
+      data: { 
+        name: 'Admin WAD', 
+        email: 'admin@example.com',
+        password: hashedPassword,
+        role: 'ADMIN' // ← Menambahkan Role Admin
       }
     }),
   ]);
-  console.log(' ✓ 2 user dibuat dengan password ter-hash Argon2');
+  console.log(' ✓ 3 user dibuat (Budi, Siti, Admin) dengan password ter-hash Argon2');
 
   // ─── Buat Tasks ───────────────────────────────────────
   const [taskServer, taskAPI, taskMySQL, taskPrisma, taskLaporan, taskDesain] = await Promise.all([
@@ -114,8 +124,7 @@ async function main() {
   ]);
   console.log(' ✓ 6 task dibuat');
 
-  // ─── Buat Reminders (Model Tambahan UTS Bagian D) ──────
-  // Menyiapkan waktu pengingat masa mendatang (besok dan lusa)
+  // ─── Buat Reminders ───────────────────────────────────
   const besok = new Date();
   besok.setDate(besok.getDate() + 1);
 

@@ -1,11 +1,15 @@
 const taskRepo = require('../repositories/task.repository');
 
-// ─── GET /tasks (List dengan Pagination & Filter) ──────
+// ─── GET /tasks (List dengan Pagination, Filter, & RBAC) ───
 const listTasks = async (req, res, next) => {
   try {
     const { status, priority, sort, order, limit, offset } = req.query;
+
+    // UPDATE: User biasa hanya melihat task miliknya; Admin bypass melihat semua task
+    const userId = req.user.role === 'ADMIN' ? undefined : req.user.userId;
     
     const { data, total } = await taskRepo.findMany({ 
+      userId, // Menyaring data sesuai hak akses role
       status, 
       priority, 
       sort, 
@@ -34,16 +38,13 @@ const listTasks = async (req, res, next) => {
   }
 };
 
-// ─── POST /tasks (Buat Task Baru - UPDATED WITH JWT) ───
+// ─── POST /tasks (Buat Task Baru - Terkunci JWT) ─────────
 const createTask = async (req, res, next) => {
   try {
-    // AMBIL USER ID LANGSUNG DARI JWT TOKEN YANG SUDAH DI-VERIFIKASI MIDDLEWARE
-    const jwtUserId = req.user.userId;
-
-    // Gabungkan data body dari Postman dengan userId pemilik token
+    // UPDATE: Gunakan userId murni dari token pengaman, abaikan data dari request body!
     const task = await taskRepo.create({ 
       ...req.body, 
-      userId: Number(jwtUserId) // Menjamin userId terisi secara otomatis dari sistem keamanan
+      userId: req.user.userId 
     });
 
     res.status(201)
@@ -74,7 +75,7 @@ const getTask = async (req, res, next) => {
   }
 };
 
-// ─── PATCH/PUT /tasks/:id (Update Task) ─────────────────
+// ─── PATCH /tasks/:id (Update Task) ─────────────────────
 const updateTask = async (req, res, next) => {
   try {
     const task = await taskRepo.update(req.params.id, req.body);
