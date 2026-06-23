@@ -1,6 +1,7 @@
 const config = require('./config');
 const express = require('express');
-const helmet = require('helmet');                         // ← BARU: Mengimpor Helmet untuk keamanan headers
+const helmet = require('helmet');                         // ← Mengimpor Helmet untuk keamanan headers
+const cors = require('cors');                           // ← BARU: Mengimpor package CORS
 const routes = require('./routes');
 const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes'); 
@@ -16,7 +17,14 @@ const { apiLimiter } = require('./config/rateLimiter');
 const app = express();
 
 // ─── Middleware Global ───────────────────────────────────────
-app.use(helmet());                                          // ← BARU: Mengaktifkan tameng pengaman Helmet Headers
+app.use(helmet());                                          // ← Mengaktifkan tameng pengaman Helmet Headers
+
+// BARU: Mengizinkan Frontend Vite (Port 5173) Menghubungi Server Backend Ini
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
