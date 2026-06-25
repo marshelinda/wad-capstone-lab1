@@ -5,11 +5,11 @@ const listTasks = async (req, res, next) => {
   try {
     const { status, priority, sort, order, limit, offset } = req.query;
 
-    // UPDATE: User biasa hanya melihat task miliknya; Admin bypass melihat semua task
+    // USER RBAC: User biasa hanya melihat task miliknya; Admin bypass melihat semua task
     const userId = req.user.role === 'ADMIN' ? undefined : req.user.userId;
     
     const { data, total } = await taskRepo.findMany({ 
-      userId, // Menyaring data sesuai hak akses role
+      userId, 
       status, 
       priority, 
       sort, 
@@ -38,14 +38,35 @@ const listTasks = async (req, res, next) => {
   }
 };
 
-// ─── POST /tasks (Buat Task Baru - Terkunci JWT) ─────────
+// ─── POST /tasks (Buat Task Baru + Real-time Emit) ─────────
 const createTask = async (req, res, next) => {
   try {
-    // UPDATE: Gunakan userId murni dari token pengaman, abaikan data dari request body!
-    const task = await taskRepo.create({ 
-      ...req.body, 
-      userId: req.user.userId 
+    const { title, description, status, priority, dueDate, categoryId } = req.body;
+    const userId = req.user.userId; // Menggunakan userId aman dari token JWT
+
+    const task = await taskRepo.create({
+      title, 
+      description, 
+      status, 
+      priority,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      userId,
+      categoryId: categoryId || null,
     });
+
+    // ── EMIT REAL-TIME EVENT ────────────────────────────
+    const io = req.app.get("io");
+    if (io) {
+      // Kirim ke semua user yang terhubung (room global)
+      io.to("tasks:global").emit("task:created", { task });
+      
+      // Kirim notifikasi personal ke pembuat task
+      io.to(`user:${userId}`).emit("notification", {
+        type: "SUCCESS",
+        title: "Task Berhasil Dibuat",
+        message: `Task "${task.title}" telah ditambahkan.`,
+      });
+    }
 
     res.status(201)
       .set('Location', `/api/v1/tasks/${task.id}`)
@@ -75,18 +96,34 @@ const getTask = async (req, res, next) => {
   }
 };
 
-// ─── PATCH /tasks/:id (Update Task) ─────────────────────
+// ─── PATCH /tasks/:id (Update Task + Real-time Emit) ─────
 const updateTask = async (req, res, next) => {
   try {
-    const task = await taskRepo.update(req.params.id, req.body);
+    const { id } = req.params;
+    const { title, description, status, priority, dueDate } = req.body;
+
+    // Melakukan update dengan parseInt(id) untuk mencocokkan tipe data database (ID Integer)
+    const task = await taskRepo.update(parseInt(id), {
+      title, 
+      description, 
+      status, 
+      priority,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+    });
     
     if (!task) {
       return res.status(404).json({ 
         error: { 
           code: 'NOT_FOUND', 
-          message: `Task ID ${req.params.id} tidak ditemukan.` 
+          message: `Task ID ${id} tidak ditemukan.` 
         } 
       });
+    }
+
+    // ── EMIT REAL-TIME EVENT ────────────────────────────
+    const io = req.app.get("io");
+    if (io) {
+      io.to("tasks:global").emit("task:updated", { task });
     }
 
     res.status(200).json({ data: task });
@@ -95,18 +132,25 @@ const updateTask = async (req, res, next) => {
   }
 };
 
-// ─── DELETE /tasks/:id (Hapus Task) ────────────────────
+// ─── DELETE /tasks/:id (Hapus Task + Real-time Emit) ────
 const deleteTask = async (req, res, next) => {
   try {
-    const ok = await taskRepo.remove(req.params.id);
+    const { id } = req.params;
     
+    const ok = await taskRepo.remove(parseInt(id));
     if (!ok) {
       return res.status(404).json({ 
         error: { 
           code: 'NOT_FOUND', 
-          message: `Task ID ${req.params.id} tidak ditemukan.` 
+          message: `Task ID ${id} tidak ditemukan.` 
         } 
       });
+    }
+
+    // ── EMIT REAL-TIME EVENT ────────────────────────────
+    const io = req.app.get("io");
+    if (io) {
+      io.to("tasks:global").emit("task:deleted", { taskId: parseInt(id) });
     }
 
     res.status(204).send();

@@ -1,34 +1,42 @@
 const config = require('./config');
 const express = require('express');
-const helmet = require('helmet');                         // ← Mengimpor Helmet untuk keamanan headers
-const cors = require('cors');                           // ← BARU: Mengimpor package CORS
+const http = require('http'); // ← BARU: Mengimpor HTTP module bawaan Node.js
+const { Server } = require('socket.io'); // ← BARU: Mengimpor Socket.IO Server
+const helmet = require('helmet');
+const cors = require('cors');
+const { corsOptions } = require('./config/cors'); // ← BARU: Menggunakan konfigurasi CORS terpusat
 const routes = require('./routes');
 const tasksRoutes = require('./routes/tasks.routes');
-const usersRoutes = require('./routes/users.routes'); 
-const adminRoutes = require('./routes/admin.routes');       // ← Mengimpor rute admin RBAC
-const reminderRoutes = require('./routes/reminderRoutes');  // ← Mengimpor rute reminder UTS
-const authRoutes = require('./routes/auth.routes');         // ← Mengimpor rute auth
-const authenticate = require('./middleware/authenticate'); // ← Mengimpor middleware JWT
+const usersRoutes = require('./routes/users.routes');
+const adminRoutes = require('./routes/admin.routes');
+const reminderRoutes = require('./routes/reminderRoutes');
+const authRoutes = require('./routes/auth.routes');
+const authenticate = require('./middleware/authenticate');
 const setupSwagger = require('./docs/swagger');
-
-// Import apiLimiter global dari file config rateLimiter kamu
 const { apiLimiter } = require('./config/rateLimiter');
 
 const app = express();
+const server = http.createServer(app); // ← BARU: HTTP server membungkus Express untuk Socket.IO
+
+// ─── SOCKET.IO SERVER ────────────────────────────────────────
+const io = new Server(server, {
+  cors: {
+    origin: config.allowedOrigins || "http://localhost:5173", // Menggunakan allowedOrigins dari config
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+
+// Ekspos io agar bisa diakses dari controller menggunakan req.app.get('io')
+app.set("io", io);
 
 // ─── Middleware Global ───────────────────────────────────────
-app.use(helmet());                                          // ← Mengaktifkan tameng pengaman Helmet Headers
-
-// BARU: Mengizinkan Frontend Vite (Port 5173) Menghubungi Server Backend Ini
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}));
-
-app.use(express.json());
+app.use(helmet());
+app.use(cors(corsOptions)); // Menggunakan corsOptions baru yang lebih dinamis
+app.use(express.json({ limit: "10kb" })); // Menambahkan limit payload untuk keamanan tambahan
 app.use(express.urlencoded({ extended: true }));
-
-// Pasang apiLimiter secara global agar Express mulai menghitung request IP
 app.use(apiLimiter);
 
 // Logging middleware untuk memantau request yang masuk beserta durasinya
@@ -43,16 +51,18 @@ app.use((req, res, next) => {
 
 // ─── Routes (Tanpa Proteksi) ─────────────────────────────────
 app.use('/', routes); // /health
-app.use('/api', routes); // /api/info, /api/echo/:msg 
-app.use('/auth', authRoutes); // ← Rute login, register, refresh, logout (Di dalamnya ada authLimiter)
+app.use('/api', routes); // /api/info, /api/echo/:msg
+app.use('/auth', authRoutes);
 
 // ─── API Routes (Dilindungi JWT) ─────────────────────────────
-// Middleware 'authenticate' dipasang di sini agar semua rute di bawah /api/v1 wajib membawa token
-app.use('/api/v1', authenticate);
-app.use('/api/v1/tasks', tasksRoutes);       // /api/v1/tasks (CRUD yang terproteksi)
-app.use('/api/v1/users', usersRoutes);       // /api/v1/users (Terproteksi)
-app.use('/api/v1/admin', adminRoutes);       // /api/v1/admin (← Jalur Admin RBAC Terproteksi)
-app.use('/api/v1/reminders', reminderRoutes); // /api/v1/reminders/upcoming (Terproteksi)
+app.use('/api/v1', authenticate); // Middleware JWT tetap mengamankan rute di bawahnya
+app.use('/api/v1/tasks', tasksRoutes);
+app.use('/api/v1/users', usersRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/reminders', reminderRoutes);
+
+// ─── SOCKET.IO SETUP ─────────────────────────────────────────
+require("./socket")(io); // Memuat file handler socket.js milikmu
 
 // ─── Swagger UI ─────────────────────────────────────────────
 setupSwagger(app);
@@ -70,12 +80,14 @@ app.use((req, res) => {
 
 // ─── Global Error Handler ───────────────────────────────────
 app.use((err, req, res, next) => {
-  // 1. Error dengan statusCode bawaan dari authService
-  if (err.statusCode) {
-    return res.status(err.statusCode).json({
-      error: { 
-        code: err.code || 'AUTH_ERROR', 
-        message: err.message 
+  // 1. Error dengan statusCode bawaan dari authService / custom error status
+  const status = err.statusCode || err.status || 500;
+  
+  if (err.statusCode || err.status) {
+    return res.status(status).json({
+      error: {
+        code: err.code || 'AUTH_ERROR',
+        message: err.message
       },
     });
   }
@@ -83,31 +95,33 @@ app.use((err, req, res, next) => {
   // 2. Prisma P2002: Unique constraint failed (misal: email duplikat)
   if (err.code === 'P2002') {
     return res.status(409).json({
-      error: { 
-        code: 'DUPLICATE_RESOURCE', 
-        message: 'Data sudah digunakan.' 
+      error: {
+        code: 'DUPLICATE_RESOURCE',
+        message: 'Data sudah digunakan.'
       },
     });
   }
 
   // 3. Fallback error jika terjadi masalah tidak terduga lainnya
   console.error('Unhandled error:', err);
-  res.status(500).json({
+  res.status(status).json({
     error: {
-      code: 'INTERNAL_ERROR',
+      code: err.code || 'INTERNAL_ERROR',
       message: config.env === 'development' ? err.message : 'Terjadi kesalahan di server.',
     },
   });
 });
 
 // ─── Start Server ────────────────────────────────────────────
-app.listen(config.port, () => {
+// PENTING: Menggunakan server.listen(), BUKAN app.listen() agar Socket.IO berjalan
+server.listen(config.port, () => {
   console.log('─'.repeat(50));
   console.log(` ${config.appName} v${config.version}`);
   console.log(` Environment : ${config.env}`);
-  console.log(` Database    : MySQL via XAMPP`); 
+  console.log(` Database    : MySQL via XAMPP`);
   console.log(` Server      : http://localhost:${config.port}`);
   console.log(` Docs        : http://localhost:${config.port}/api/docs`);
+  console.log(` Socket.IO   : Siap menerima koneksi websocket`);
   console.log('─'.repeat(50));
 });
 
