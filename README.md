@@ -53,15 +53,23 @@ WAD Capstone API adalah backend service modern untuk sistem manajemen tugas (*Ta
 
 ### 3. Konfigurasi Environment (.env)
 
-    PORT=3000
-    NODE_ENV=development
+  Salin file contoh konfigurasi dan sesuaikan nilainya:
 
-    DATABASE_URL="mysql://root:@localhost:3306/wadcapstone"
+  cp .env.example .env
 
-    JWT_ACCESS_SECRET="super_secret_access_key_123"
-    JWT_REFRESH_SECRET="super_secret_refresh_key_123"
-    JWT_ACCESS_EXPIRES_IN="15m"
-    JWT_REFRESH_EXPIRES_IN="7d"
+  Contoh isi `.env` (nilai placeholder):
+
+  PORT=3000
+  NODE_ENV=development
+
+  DATABASE_URL="mysql://root:password@localhost:3306/wadcapstone"
+
+  ALLOWED_ORIGINS=http://localhost:5173
+
+  JWT_ACCESS_SECRET="super_secret_access_key_123"
+  JWT_REFRESH_SECRET="super_secret_refresh_key_123"
+  JWT_ACCESS_EXPIRES_IN="15m"
+  JWT_REFRESH_EXPIRES_IN="7d"
 
 ---
 
