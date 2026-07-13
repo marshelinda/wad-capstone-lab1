@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { getUpcomingReminders } = require('../controllers/reminderController');
+const { getUpcomingReminders, createReminder } = require('../controllers/reminderController');
 
-// Cukup langsung dipetakan karena proteksi token sudah ditangani secara global oleh index.js
 router.get('/upcoming', getUpcomingReminders);
+router.post('/', createReminder); 
 
 module.exports = router;

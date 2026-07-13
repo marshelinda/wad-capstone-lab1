@@ -15,6 +15,10 @@ const authenticate = require('./middleware/authenticate');
 const setupSwagger = require('./docs/swagger');
 const { apiLimiter } = require('./config/rateLimiter');
 
+// Import PrismaClient untuk keperluan Background Worker Reminder
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
 const app = express();
 const server = http.createServer(app); // ← BARU: HTTP server membungkus Express untuk Socket.IO
 
@@ -64,6 +68,60 @@ app.use('/api/v1/reminders', reminderRoutes);
 // ─── SOCKET.IO SETUP ─────────────────────────────────────────
 require("./socket")(io); // Memuat file handler socket.js milikmu
 
+// ─── BACKGROUND WORKER: REAL-TIME PUSH REMINDER (USER SPECIFIC) ───
+const checkAndSendReminders = async (ioInstance) => {
+  try {
+    const sekarang = new Date();
+    
+    // 1. Ambil pengingat yang jatuh tempo beserta data userId-nya
+    const jatuhTempoReminders = await prisma.reminder.findMany({
+      where: {
+        remindAt: {
+          lte: sekarang
+        }
+      },
+      include: {
+        task: {
+          select: { title: true }
+        }
+      }
+    });
+
+    if (jatuhTempoReminders.length > 0) {
+      console.log(`[Cron] Menemukan ${jatuhTempoReminders.length} reminder jatuh tempo.`);
+
+      jatuhTempoReminders.forEach((reminder) => {
+        // 🎯 PERBAIKAN: Kirim HANYA ke room milik userId yang bersangkutan
+        // Catatan: Pastikan di file socket.js milikmu sudah ada perintah `socket.join(String(user.id))` atau `socket.join(`user:${user.id}`)` saat user pertama kali connect.
+        
+        const targetRoom = String(reminder.userId); 
+        
+        ioInstance.to(targetRoom).to(`user:${reminder.userId}`).emit('push-notification', {
+          title: '⏰ Pengingat Tugas!',
+          message: `Waktunya menyelesaikan tugas: "${reminder.task?.title || 'Tugas Tanpa Judul'}"`,
+          taskId: reminder.taskId
+        });
+      });
+
+      // 3. Hapus pengingat yang sudah dikirim dari database
+      const idsToDelete = jatuhTempoReminders.map(r => r.id);
+      await prisma.reminder.deleteMany({
+        where: {
+          id: { in: idsToDelete }
+        }
+      });
+      console.log(`[Cron] Berhasil membersihkan ${idsToDelete.length} data reminder.`);
+    }
+  } catch (error) {
+    console.error('[Cron Error] Gagal memproses data jatuh tempo:', error);
+  }
+};
+
+// Menjalankan pengecekan otomatis database setiap 15 detik sekali
+setInterval(() => {
+  checkAndSendReminders(io);
+}, 15000);
+
 // ─── Swagger UI ─────────────────────────────────────────────
 setupSwagger(app);
 
@@ -80,7 +138,6 @@ app.use((req, res) => {
 
 // ─── Global Error Handler ───────────────────────────────────
 app.use((err, req, res, next) => {
-  // 1. Error dengan statusCode bawaan dari authService / custom error status
   const status = err.statusCode || err.status || 500;
   
   if (err.statusCode || err.status) {
@@ -92,7 +149,6 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // 2. Prisma P2002: Unique constraint failed (misal: email duplikat)
   if (err.code === 'P2002') {
     return res.status(409).json({
       error: {
@@ -102,7 +158,6 @@ app.use((err, req, res, next) => {
     });
   }
 
-  // 3. Fallback error jika terjadi masalah tidak terduga lainnya
   console.error('Unhandled error:', err);
   res.status(status).json({
     error: {
@@ -113,7 +168,6 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start Server ────────────────────────────────────────────
-// PENTING: Menggunakan server.listen(), BUKAN app.listen() agar Socket.IO berjalan
 server.listen(config.port, () => {
   console.log('─'.repeat(50));
   console.log(` ${config.appName} v${config.version}`);
@@ -122,6 +176,7 @@ server.listen(config.port, () => {
   console.log(` Server      : http://localhost:${config.port}`);
   console.log(` Docs        : http://localhost:${config.port}/api/docs`);
   console.log(` Socket.IO   : Siap menerima koneksi websocket`);
+  console.log('🚀 Background Worker Reminder Real-time telah aktif!');
   console.log('─'.repeat(50));
 });
 
