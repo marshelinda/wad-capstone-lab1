@@ -26,4 +26,4 @@ const corsOptions = {
   maxAge: 86400,     // Cache response preflight (OPTIONS) selama 24 jam untuk menghemat bandwidth
 };
 
-module.exports = corsOptions;
+module.exports = { corsOptions };
