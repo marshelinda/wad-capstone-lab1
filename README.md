@@ -115,7 +115,7 @@ Aplikasi ini disebarkan (*deployed*) ke server produksi (VPS) menggunakan arsite
 
 ### 🔗 Tautan Akses & Health Check Produksi
 Layanan backend ini dapat diakses dan dipantau statusnya melalui URL publik maupun port IP eksternal berikut:
-* **Health Check API (Domain):** [http://api-health.marshelinda.my.id](http://api-health.marshelinda.my.id)
+* **Health Check API (Domain):** [https://api-health.marshelinda.my.id](https://api-health.marshelinda.my.id)
 * **Health Check API (IP Server HTTP):** [http://103.93.135.78:3000/api/health](http://103.93.135.78:3000/api/health)
 ```text
 [ Pengguna / Browser / Klien Frontend ]
