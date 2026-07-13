@@ -109,9 +109,40 @@ erDiagram
 - **Task → Reminder**: Setiap reminder wajib terhubung ke satu task. Jika task dihapus, seluruh reminder terkait akan otomatis terhapus (*On Delete: Cascade*).
 - **Category → Task**: Satu kategori dapat digunakan oleh banyak task untuk pengelompokan.
 - **User → RefreshToken**: Digunakan untuk menyimpan refresh token sebagai bagian dari manajemen sesi autentikasi JWT.
-## 🏗️ Arsitektur Deployment
-Aplikasi ini dirancang untuk di-deploy menggunakan arsitektur berikut:
-**Client ──► Nginx (Reverse Proxy) ──► PM2 (Process Manager) ──► Node.js App ──► MySQL DB**
+## 🏗️ Arsitektur Deployment & Akses URL
+
+Aplikasi ini disebarkan (*deployed*) ke server produksi (VPS) menggunakan arsitektur berlapis untuk menjamin performa, keamanan, dan ketersediaan tinggi:
+
+### 🔗 Tautan Akses & Health Check Produksi
+Layanan backend ini dapat diakses dan dipantau statusnya melalui URL publik maupun port IP eksternal berikut:
+* **Health Check API (Domain):** [http://api-health.marshelinda.my.id](http://api-health.marshelinda.my.id)
+* **Health Check API (IP Server HTTP):** [http://103.93.135.78:3000/api/health](http://103.93.135.78:3000/api/health)
+```text
+[ Pengguna / Browser / Klien Frontend ]
+          │ (HTTPS / HTTP - Port 3000)
+          ▼
+    ┌───────────┐
+    │   Nginx   │ ── (Reverse Proxy & SSL Termination)
+    └───────────┘
+          │ (HTTP Proxying - Port 3000 & 3001)
+          ▼
+    ┌───────────┐
+    │    PM2    │ ── (Process Manager - Keep Alive & Clustering)
+    └───────────┘
+          │
+          ├──► [ Frontend App (Vite Static / SSR Server) ] ── (Port 3001)
+          │
+          └──► [ Backend Express.js Server ] ─────────────── (Port 3000)
+                     │
+                     ├──► [ Socket.IO Server Instance ]
+                     │
+                     └──► [ Prisma ORM Layer ]
+                                │
+                                ▼
+                          ┌───────────┐
+                          │   MySQL   │ ── (Database Layer via XAMPP/Native)
+                          └───────────┘
+```
 1. **Nginx (Reverse Proxy)**: Menerima request HTTP/HTTPS dan koneksi WebSocket dari internet (Client). Nginx bertugas meneruskan traffic dengan aman ke port aplikasi Node.js internal, mengelola sertifikat SSL (HTTPS), dan melakukan load balancing jika diperlukan.
 2. **PM2 (Process Manager)**: Menjalankan aplikasi Express.js di background (daemon). PM2 memastikan aplikasi tetap hidup dan akan melakukan auto-restart jika aplikasi mengalami crash. PM2 juga dapat menjalankan aplikasi dalam mode cluster untuk mendistribusikan beban kerja ke beberapa core CPU.
 3. **Node.js App (Express.js + Socket.IO)**: Inti dari backend yang memproses logika bisnis, API routing, keamanan JWT, koneksi database, dan memancarkan event real-time menggunakan Socket.IO.
