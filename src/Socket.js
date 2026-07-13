@@ -1,15 +1,26 @@
 const jwt = require("jsonwebtoken");
 const config = require("./config");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-// Fungsi tiruan untuk simulasi query database (sesuaikan dengan ORM/DB Anda)
 async function getJatuhTempoRemindersFromDB() {
-  // Contoh logis query: SELECT * FROM reminders WHERE waktu_reminder <= NOW() AND is_sent = false
-  // Return array of objects: [{ id: 1, user_id: 12, judul_tugas: "Tugas UTS" }]
-  return []; 
+  const sekarang = new Date();
+  return await prisma.reminder.findMany({
+    where: {
+      remindAt: { lte: sekarang },
+      isSent: false
+    },
+    include: {
+      task: { select: { title: true } }
+    }
+  });
 }
 
 async function updateReminderStatusInDB(reminderId) {
-  // Contoh logis query: UPDATE reminders SET is_sent = true WHERE id = reminderId
+  await prisma.reminder.update({
+    where: { id: reminderId },
+    data: { isSent: true }
+  });
 }
 
 module.exports = function setupSocket(io) {
@@ -67,9 +78,10 @@ module.exports = function setupSocket(io) {
 
       for (const reminder of activeReminders) {
         // Kirim push notification ke room user spesifik terkait
-        io.to(`user:${reminder.user_id}`).emit("notification", {
+        const judul = reminder.task?.title || "Tugas";
+        io.to(`user:${reminder.userId}`).emit("push-notification", {
           title: "⏰ Pengingat Tugas!",
-          message: `Reminder: ${reminder.judul_tugas} sudah jatuh tempo.`,
+          message: `Reminder: ${judul} sudah jatuh tempo.`,
           type: "reminder",
           data: reminder
         });
