@@ -25,7 +25,7 @@ const server = http.createServer(app); // ← BARU: HTTP server membungkus Expre
 // ─── SOCKET.IO SERVER ────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: config.allowedOrigins || "http://localhost:5173", // Menggunakan allowedOrigins dari config
+    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ["http://localhost:5173", "http://localhost:3001"], 
     methods: ["GET", "POST"],
     credentials: true,
   },
